@@ -1,29 +1,23 @@
-import os
+# Define the route for file upload and PDF conversion
+import tempfile
 from flask import Blueprint, request, jsonify
-from backend.app.utils import save_file
+from backend.app.conversion_utils import handle_pdf_conversion
+from backend.app.file_utils import save_file
+from backend.app.validation_utils import validate_upload
 
 # Create a blueprint to handle the routes
 main = Blueprint('main', __name__)
 
-# Define the route for file upload and PDF conversion
 @main.route('/convert', methods=['POST'])
 def convert_to_pdf():
-    # Check if a file is part of the request
-    if 'file' not in request.files:
-        return jsonify({"error": "No file part"}), 400
+    """Converts uploaded files to PDF."""
+    uploaded_file = validate_upload(request)
+    if uploaded_file is None:
+        return jsonify({"error": "Invalid file upload."}), 400
 
-    file = request.files['file']
-
-    # If no file is selected
-    if file.filename == '':
-        return jsonify({"error": "No selected file"}), 400
-
-    # Define the upload folder path
-    upload_folder = os.path.join(os.path.dirname(__file__), '..', 'uploads')
-
-    # Save the file using the utility function
-    try:
-        file_path = save_file(file, upload_folder)
-        return jsonify({"message": "File uploaded successfully!", "file_path": file_path}), 200
-    except Exception as e:
-        return jsonify({"error": f"File upload failed: {str(e)}"}), 500
+    with tempfile.TemporaryDirectory() as temp_dir:
+        uploaded_file_path = save_file(uploaded_file, temp_dir)
+        if uploaded_file_path is None:
+            return jsonify({"error": "File upload failed."}), 500
+        
+        return handle_pdf_conversion(uploaded_file_path)

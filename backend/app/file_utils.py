@@ -1,5 +1,8 @@
 import os
+from pathlib import Path
 from werkzeug.datastructures import FileStorage
+from docx import Document
+
 
 def get_unique_filename(original_filename: str, upload_folder: str) -> str:
     """Generates a unique filename by appending a counter if the file already exists.
@@ -44,3 +47,8 @@ def save_file(file: FileStorage, upload_folder: str) -> str:
     file.save(unique_file_path)
     
     return unique_file_path
+
+def change_extension_to_pdf(file_path):
+    """Helper function to change the file extension to .pdf."""
+    return os.path.splitext(file_path)[0] + '.pdf'
+
